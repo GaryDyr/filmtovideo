@@ -1,0 +1,66 @@
+
+setBatchMode(true);
+
+//Open the file series; getdirectory asks for the directories
+//next 2 lines were for early testing only, but show needed format
+//for file specification:
+//dir1 = "C:\\Graphics\\camcorder rotating tests\\" ;
+//dir2 = "C:\\Graphics\\camcorder rotating tests\\Outfeed\\";
+
+dir1 = getDirectory("Choose image Directory");
+dir2 = getDirectory("Choose Destination Directory");
+list = getFileList(dir1);
+
+ run("Clear Results");
+
+//Loop through files
+for (n=0; n<list.length;n++) {
+    showProgress(n+1, list.length); //never saw this!?
+    open(dir1+list[n]);
+
+//Extract name of image for header for id purposes later
+//could also use File,name here, but this works
+//problem if file name has blanks; Excel writer plugin uses CSV/text file 
+//and parses blanks to cells, so remove blanks.... 
+name = getTitle; 
+index = 0;
+while (index!=-1) {
+   index = indexOf(name," ");
+   if (index!=-1) name = substring(name,0,index) + substring(name,index+2); 
+}
+//take care of dot in file name
+index = lastIndexOf(name, "."); 
+if (index!=-1) name = substring(name, 0, index); 
+
+//process the image file, top crop first, on duplicate file.
+run("Duplicate...", "title=[temp-1.png]");
+//for vertical measurements, uncomment next line 
+makeRectangle(960, 0, 4, 1080);
+//for vert. meas. comment out the next line: 
+//makeRectangle(0, 0, 1920, 20);
+run("Crop");
+run("8-bit");
+run("Make Binary");
+
+counterold = nResults();
+run("Analyze Particles...", "size=0-Infinity circularity=0.00-1.00 show=Nothing display record");
+counter = nResults()-1;
+//This is needed to fill every row w/ label because of Excel cvs conversion.
+for (k=counterold; k<counter+1;k++) {
+  setResult("Label",k,name);
+  updateResults();
+}
+
+close(); //close the cropped duplicate
+
+} //file loop
+
+//Save file as Excel; the following adds the column labels from results
+fname = "topbotvertresults2";
+run("Excel...", "select...=["+dir2+fname+".xls]"); 
+
+//he following two lines print only the data, w/ no result headers
+//run("Input/Output...", "file=.xls"); 
+//saveAs("measurements", dir2+File.name+".xls");
+
+

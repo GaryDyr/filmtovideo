@@ -1,0 +1,66 @@
+setBatchMode(true);
+
+//Open the file series; getdirectory ask for the directories to use
+//Using GetDirectory can be annoying
+//dir1 = "C:\\Graphics\\camcorder rotating tests\\" ;
+//dir2 = "C:\\Graphics\\camcorder rotating tests\\Outfeed\\";
+
+dir1 = getDirectory("Choose image Directory");
+dir2 = getDirectory("Choose Destination Directory");
+list = getFileList(dir1);
+
+ run("Clear Results");
+
+
+//Loop through files
+for (n=0; n<list.length;n++) {
+
+   showProgress(n, list.length);
+   open(dir1+list[n]);
+
+   //Extract name of image for header
+   //could also use File,name here, but this works
+   //problem when the file name contains blanks; Excel writer converts from a CSV file and parses
+   //file name blanks as delimiters; remove blanks
+   name = getTitle; 
+   index = 0;
+   while (index!=-1) {
+     index = indexOf(name," ");
+     if (index!=-1) name = substring(name,0,index) + substring(name,index+2); 
+   }
+
+  //take care of dot in file name
+  index = lastIndexOf(name, "."); 
+  if (index!=-1) name = substring(name, 0, index); 
+
+  //Process image; generates profile plot y-values in "Results" table 
+
+  //Set the bottom rectangle to be analyzed
+  makeRectangle(0, 1076, 1920, 2);   //x from left;  y from top; rect. Width; rect. Ht. 
+
+  // Get profile and display values in "Results" window
+   profile = getProfile();
+  for (i=0; i<profile.length; i++){
+     setResult(name + "b", i, profile[i]);    // using name as header name.
+    //   updateResults(); //Call only if we want to see updated results, slows down process
+  }
+
+   //do again for top of image; could use inner loop, but easier to see this way
+   makeRectangle(0, 0, 1920, 2);   //X from left; y from top; rect. Width. Rect. Ht. 
+   profile = getProfile();
+   for (i=0; i<profile.length; i++){
+     setResult(name + "t", i, profile[i]);    // using file name as header name.
+     //updateResults(); 
+   }
+
+  //Close the image file, but not the results table
+   close();
+}  //file loop
+
+//Save file as Excel; the following adds the column labels from results
+fname = "profiletopbotresults";
+run("Excel...", "select...=["+dir2+fname+".xls]"); 
+
+//he following two lines print only the data. not the headers from the results
+//run("Input/Output...", "file=.xls"); 
+//saveAs("measurements", dir2+File.name+".xls");
